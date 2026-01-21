@@ -37,7 +37,7 @@ int main()
     double length;
     for (int i = 0; i < 4; i++)
     {
-        leg[i].Humerus = 10.25;
+        leg[i].Humerus = 7;
         leg[i].Radius = 8;
     }
     leg[0].hip_offset = 1;
@@ -46,7 +46,7 @@ int main()
     printf("\nleg.no.      hip_angle       knee_angle       length         height from ground\n");
     const int frames = 40; // smooth frames per step
     double y;              // foot height
-    double x;
+    double x=0;
     double step = length / frames;
     // Forward arc
     for (int i = 0; i <= frames; i++)

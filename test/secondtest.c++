@@ -15,6 +15,8 @@ typedef struct
     double Radius;
     double hip_angle;
     int knee_angle;
+    double hip_offset;
+    double knee_offset;
     int side;
 } Leg;
 
@@ -29,14 +31,14 @@ int map_int(int x, int in_min, int in_max, int out_min, int out_max)
 void calc_angles(Leg *leg, double height)
 {     if (leg->side == 0)
     {
-        leg->hip_angle = map_int(90 - floor((180 / M_PI) * acos((pow(leg->Humerus, 2) + pow(height, 2) - pow(leg->Radius, 2)) / (2 * height * leg->Humerus))),0, 180, 180, 0);
-        leg->knee_angle = floor((180 / M_PI) * acos((pow(leg->Radius, 2) - pow(height, 2) + pow(leg->Humerus, 2)) / (2 * leg->Radius * leg->Humerus)));
+        leg->hip_angle = constrain(map_int(90 - floor(((180 / M_PI) * acos((pow(leg->Humerus, 2) + pow(height, 2) - pow(leg->Radius, 2)) / (2 * height * leg->Humerus)))-(leg->hip_offset*(M_PI/180))),0, 180, 180, 0),0,180);
+        leg->knee_angle = constrain(floor(((180 / M_PI) * acos((pow(leg->Radius, 2) - pow(height, 2) + pow(leg->Humerus, 2)) / (2 * leg->Radius * leg->Humerus)))+(leg->knee_offset*(M_PI/180))),0,180);
     }
     else if (leg->side == 1)
     {
 
-    leg->hip_angle = 90 - floor((180 / M_PI) * (acos((pow(leg->Humerus, 2) + pow(height, 2) - pow(leg->Radius, 2)) / (2 * height * leg->Humerus))));
-        leg->knee_angle = map_int(floor((180 / M_PI) * (acos((pow(leg->Radius, 2) - pow(height, 2) + pow(leg->Humerus, 2)) / (2 * leg->Radius * leg->Humerus)))), 0, 180, 180, 0);
+    leg->hip_angle = constrain(90 - floor(((180 / M_PI) * (acos((pow(leg->Humerus, 2) + pow(height, 2) - pow(leg->Radius, 2)) / (2 * height * leg->Humerus))))-(leg->hip_offset*(M_PI/180))),0,180);
+        leg->knee_angle = constrain(map_int(floor(((180 / M_PI) * (acos((pow(leg->Radius, 2) - pow(height, 2) + pow(leg->Humerus, 2)) / (2 * leg->Radius * leg->Humerus))))+(leg->knee_offset*(M_PI/180))), 0, 180, 180, 0),0,180);
     }
 }
 
