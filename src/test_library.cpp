@@ -1,13 +1,24 @@
 
-#include"quadruped.h"
+#include "quadruped.h"
 
-Leg front_right(3.0,2.5,13,14,0);
-void setup(){
+Leg front_right(8, 10.25, 13, 14, right);
+void setup()
+{
 
-Serial.begin(115200);
-front_right.base_height_stepSize(3,1.5);
-front_right.move_vertical();
+    Serial.begin(115200);
+    front_right.init(10, 7);
+    // Serial.println("start");
+    // front_right.move_horizontal();
+    // Serial.println("end");
 }
-void loop(){
-    
+void loop()
+{
+    if(Serial.available()){
+        char c= Serial.read();
+        if(c=='a'){
+            Serial.println("start");
+            front_right.crawl_forward();
+            Serial.println("end");
+        }
+    }
 }

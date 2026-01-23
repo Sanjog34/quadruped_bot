@@ -17,8 +17,30 @@ Leg::Leg(double humerus, double radius, int hip_pin, int knee_pin, int Leg_id)
       knee_Pin(knee_pin),
       leg_id(Leg_id)
 {
+
+    if (leg_id == left)
+    {
+        hip_angle = 180;
+        knee_angle = 0;
+    }
+    else if (leg_id == right)
+    {
+        hip_angle = 0;
+        knee_angle = 180;
+    }
+}
+
+void Leg::init(double height, double step_size)
+{
     servohip.attach(hip_Pin);
     servoknee.attach(knee_Pin);
+    this->height = height;
+    this->step_size = step_size;
+}
+
+void Leg :: moveTo_base_pos(){
+    get_angles(height,0);
+    move_leg();
 }
 
 void Leg::set_offset(double hip_offset, double knee_offset)
@@ -36,17 +58,18 @@ void Leg::get_angles(double height, double length)
 
     double knee_arg = (Humerus * Humerus - d * d + Radius * Radius) / (2 * Humerus * Radius);
     knee_arg = constrain(knee_arg, -1, 1);
-    if (leg_id == 1)
+    if (leg_id == right)
     {
-        hip_angle = int(90 - (180.0 / M_PI) * (atan2(length, height) + acos(hip_arg) - (hip_offset * M_PI / 180.0)));
-        int knee_deg = int((180.0 / M_PI) * (acos(knee_arg) + (knee_offset * M_PI / 180.0)));
+        hip_angle = int(90 - (180.0 / M_PI) * (atan2(length, height) + acos(hip_arg) + (hip_offset * M_PI / 180.0)));
+        int knee_deg = int((180.0 / M_PI) * (acos(knee_arg) - (knee_offset * M_PI / 180.0)));
         knee_angle = map(knee_deg, 0, 180, 180, 0);
     }
-    else if (leg_id == 0)
+    else if (leg_id == left)
     {
         int hip_deg = int(90 - (180.0 / M_PI) * (atan2(length, height) + acos(hip_arg) - (hip_offset * M_PI / 180.0)));
-        int knee_angle = int((180.0 / M_PI) * (acos(knee_arg) + (knee_offset * M_PI / 180.0)));
+        knee_angle = int((180.0 / M_PI) * (acos(knee_arg) + (knee_offset * M_PI / 180.0)));
         hip_angle = map(hip_deg, 0, 180, 180, 0);
+        // knee_angle = map(knee_deg, 0, 180, 180, 0);
     }
     hip_angle = constrain(hip_angle, 0, 180);
     knee_angle = constrain(knee_angle, 0, 180);
@@ -54,69 +77,73 @@ void Leg::get_angles(double height, double length)
 
 void Leg::move_vertical()
 {
-    DEBUG_PRINT("hip angle     knee angle      height from ground\n");
+
     for (float i = height; i >= 0; i = i - 0.1)
     {
-        get_angles(i, 0);
-        DEBUG_PRINT(hip_angle);
-        DEBUG_PRINT("    ");
-        DEBUG_PRINT(knee_angle);
-        DEBUG_PRINT("    ");
-        DEBUG_PRINT(i);
-        DEBUG_PRINT("\n");
+        get_angles(i, step_size);
+        print_angles(step_size,i);
         move_leg();
     }
     for (float i = 0; i <= height; i = i + 0.1)
     {
-        get_angles(i, 0);
-        DEBUG_PRINT(hip_angle);
-        DEBUG_PRINT("    ");
-        DEBUG_PRINT(knee_angle);
-        DEBUG_PRINT("    ");
-        DEBUG_PRINT(i);
-        DEBUG_PRINT("\n");
+        get_angles(i, step_size);
+        print_angles(step_size,i);
         move_leg();
     }
 }
 
 void Leg::move_horizontal()
 {
-    DEBUG_PRINT("hip angle     knee angle      length      height from ground\n");
-    for (float i = 0; i <= step_size; i = i + 0.1)
+    // for (float i = 0; i >= -1*step_size; i = i - 0.1)
+    // {
+    //     get_angles(height, i);
+    //     print_angles(i,height);
+    //     move_leg();
+    // }
+    for (float i = -1*step_size; i <= 0; i = i + 0.1)
     {
         get_angles(height, i);
-        DEBUG_PRINT(hip_angle);
-        DEBUG_PRINT("    ");
-        DEBUG_PRINT(knee_angle);
-        DEBUG_PRINT("    ");
-        DEBUG_PRINT(i);
-        DEBUG_PRINT("    ");
-        DEBUG_PRINT(height);
-        DEBUG_PRINT("\n");
+        print_angles(i,height);
         move_leg();
+        delay(100);
     }
-    for (float i = step_size; i >= 0; i = i - 0.1)
-    {
-        get_angles(height, i);
-        DEBUG_PRINT(hip_angle);
-        DEBUG_PRINT("    ");
-        DEBUG_PRINT(knee_angle);
-        DEBUG_PRINT("    ");
-        DEBUG_PRINT(i);
-        DEBUG_PRINT("    ");
-        DEBUG_PRINT(height);
-        DEBUG_PRINT("\n");
-        move_leg();
+}
+void Leg :: move_arc(){
+        const int frames = 40;
+        double y_arc;
+        double x_arc, x_horiz = 0;
+        double step = step_size / frames;
+ for (int i = 0; i <= frames; i++)
+        {
+            double t = (double)i / frames;
+            double x_arc =-t * step_size;
+            // Serial.println(x_arc);
+            y_arc = height - (sqrt((step_size / 2) * (step_size / 2) - (x_arc + step_size / 2) * (x_arc + step_size / 2)));
+            // x_horiz = x_horiz + t * step_size;
+            get_angles(y_arc,x_arc);
+            print_angles(x_arc,y_arc);
+            move_leg();
+            delay(100);
+
+}
+}
+
+void Leg :: crawl_forward(){
+    Serial.println(pos);
+    if(pos==0){
+        move_arc();
+        pos=1;
+        return;
+   
+    }
+    else if(pos==1){
+        Serial.println(pos);
+        move_horizontal();
+        pos=0;
+        return;
     }
 }
 
-void Leg::base_height_stepSize(double height, double step_size)
-{
-    this->height = height;
-    this->step_size = step_size;
-    get_angles(this->height, 0);
-    move_leg();
-}
 
 void Leg::move_leg()
 {
@@ -135,10 +162,44 @@ double Leg::get_knee_angle()
     return knee_angle;
 }
 
-void Quadruped::set_base_height_and_step_size(double height, double step_size)
+
+void Leg :: print_angles(double length,double height){
+        DEBUG_PRINT(hip_angle);
+        DEBUG_PRINT(",");
+        DEBUG_PRINT(knee_angle);
+        DEBUG_PRINT(",");
+        DEBUG_PRINT(length);
+        DEBUG_PRINT(",");
+        DEBUG_PRINT(height);
+        DEBUG_PRINT("\n");
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+void Quadruped::init(double height, double step_size)
 {
     this->height = height;
     this->step_size = step_size;
+    Front_Left.init(this->height,this->step_size);
+    Front_Right.init(this->height,this->step_size);
+    Back_Left.init(this->height,this->step_size);
+    Back_Right.init(this->height,this->step_size);
+
 }
 
 void Quadruped::move_bot()
@@ -158,7 +219,7 @@ void Quadruped::move_bot()
     delay(8);
 }
 
-void Quadruped::base_height()
+void Quadruped::moveTo_base_pos()
 {
     Front_Right.get_angles(height, 0);
     Front_Left.get_angles(height, 0);
@@ -200,7 +261,7 @@ void Quadruped::move_forward()
                 Back_Right.get_angles(y_arc, x_arc);
                 Front_Right.get_angles(height, x_horiz);
                 Back_Left.get_angles(height, x_horiz);
-                initial_position == 1; // FL and BR 's next move should be an horizontal(backward)
+                initial_position = 1; // FL and BR 's next move should be an horizontal(backward)
                                        // AND FR and BL 's next move should be arc(forward)
             }
             else if (initial_position == 1)
@@ -210,81 +271,83 @@ void Quadruped::move_forward()
                 Front_Left.get_angles(height, x_horiz);
                 Back_Right.get_angles(height, x_horiz);
                 initial_position = 0; // FL and BR 's next move should be an arc(forward)
-                                       // AND FR and BL 's next move should be horizontal(backward)
+                                      // AND FR and BL 's next move should be horizontal(backward)
             }
             move_bot();
         }
     }
 }
 
-        void Quadruped::move_backward()
+void Quadruped::move_backward()
+{
+    if (initial_position == -1)
+    {
+        for (double i = 0; i <= step_size; i = i + 0.5)
         {
-            if (initial_position == -1)
+            Front_Left.get_angles(height, i);
+            Back_Right.get_angles(height, i);
+            move_bot();
+        }
+        initial_position = 0; // FL and BR 's next move should be an horizontal(forward)
+                              // AND FR and BL 's next move should be arc(backward)
+    }
+    else
+    {
+        const int frames = 40;
+        double y_arc;
+        double x_arc = 0, x_horiz;
+        double step = step_size / frames;
+        for (int i = 0; i <= frames; i++)
+        {
+            double t = (double)i / frames;
+            double x_arc = x_arc - t * step_size;
+            y_arc = height - (sqrt((step_size / 2) * (step_size / 2) - (x_arc - step_size / 2) * (x_arc - step_size / 2)));
+            x_horiz = step_size - t * step_size;
+            if (initial_position == 0)
             {
-                for (double i = 0; i <= step_size; i = i + 0.5)
-                {
-                    Front_Left.get_angles(height, i);
-                    Back_Right.get_angles(height, i);
-                    move_bot();
-                }
-                initial_position = 0; // FL and BR 's next move should be an horizontal(forward)
-                                      // AND FR and BL 's next move should be arc(backward)
+                Front_Left.get_angles(height, x_horiz);
+                Back_Right.get_angles(height, x_horiz);
+                Front_Right.get_angles(y_arc, x_arc);
+                Back_Left.get_angles(y_arc, x_arc);
+                initial_position = 1; // FL and BR 's next move should be an arc(backward)
+                                       // AND FR and BL 's next move should be horizontal(forward)
             }
-            else
+            else if (initial_position == 1)
             {
-                const int frames = 40;
-                double y_arc;
-                double x_arc = 0, x_horiz;
-                double step = step_size / frames;
-                for (int i = 0; i <= frames; i++)
-                {
-                    double t = (double)i / frames;
-                    double x_arc = x_arc - t * step_size;
-                    y_arc = height - (sqrt((step_size / 2) * (step_size / 2) - (x_arc - step_size / 2) * (x_arc - step_size / 2)));
-                    x_horiz = step_size - t * step_size;
-                    if (initial_position == 0)
-                    {
-                        Front_Left.get_angles(height, x_horiz);
-                        Back_Right.get_angles(height, x_horiz);
-                        Front_Right.get_angles(y_arc, x_arc);
-                        Back_Left.get_angles(y_arc, x_arc);
-                        initial_position == 1; // FL and BR 's next move should be an arc(backward)
-                                               // AND FR and BL 's next move should be horizontal(forward)
-                    }
-                    else if (initial_position == 1)
-                    {
-                        Front_Left.get_angles(y_arc, x_arc);
-                        Back_Right.get_angles(y_arc, x_arc);
-                        Front_Right.get_angles(height, x_horiz);
-                        Back_Left.get_angles(height, x_horiz);
-                        initial_position == 0; // FL and BR 's next move should be an horizontal(forward)
-                                               // AND FR and BL 's next move should be arc(backward)
-                    }
-                }
-                move_bot();
+                Front_Left.get_angles(y_arc, x_arc);
+                Back_Right.get_angles(y_arc, x_arc);
+                Front_Right.get_angles(height, x_horiz);
+                Back_Left.get_angles(height, x_horiz);
+                initial_position == 0; // FL and BR 's next move should be an horizontal(forward)
+                                       // AND FR and BL 's next move should be arc(backward)
             }
         }
+        move_bot();
+    }
+}
 
-        void Quadruped::shake_hand()
+void Quadruped::shake_hand()
+{
+    moveTo_base_pos();
+    delay(200);
+    Front_Right.servohip.write(0);
+    Front_Right.servoknee.write(0);
+    delay(500);
+    for (int times = 0; times < 3; times++)
+    {
+        for (float i = 0; i <= 20; i = i + 2)
         {
-            base_height();
-            delay(200);
-            Front_Right.servohip.write(0);
-            Front_Right.servoknee.write(0);
-            delay(500);
-            for (int times = 0; times < 3; times++)
-            {
-                for (float i = 0; i <= 20; i = i + 2)
-                {
-                    Front_Right.servohip.write(i);
-                    delay(8);
-                }
-                base_height();
-                for (float i = 20; i >= 0; i = i - 2)
-                {
-                    Front_Right.servohip.write(i);
-                    delay(8);
-                }
-            }
-            base_height();
+            Front_Right.servohip.write(i);
+            delay(8);
         }
+        for (float i = 20; i >= 0; i = i - 2)
+        {
+            Front_Right.servohip.write(i);
+            delay(8);
+        }
+    }
+    moveTo_base_pos();
+}
+void Quadruped :: print_angles(double hipfl, double kneefl,double length_fl,double height_fl, double hipbl, double kneebl,double length_bl,double height_bl){
+
+}
