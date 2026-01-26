@@ -268,18 +268,10 @@ void Leg ::calibrate(String name)
 
 void Quadruped::move_bot()
 {
-    Front_Left.servohip.write(Front_Left.get_hip_angle() + Front_Left.get_hipoffset());
-    Front_Left.servoknee.write(Front_Left.get_knee_angle() + Front_Left.get_kneeoffset());
-
-    Front_Right.servohip.write(Front_Right.get_hip_angle() + Front_Right.get_hipoffset());
-    Front_Right.servoknee.write(Front_Right.get_knee_angle() + Front_Right.get_kneeoffset());
-
-    Back_Left.servohip.write(Back_Left.get_hip_angle() + Back_Left.get_hipoffset());
-    Back_Left.servoknee.write(Back_Left.get_knee_angle() + Back_Left.get_kneeoffset());
-
-    Back_Right.servohip.write(Back_Right.get_hip_angle() + Back_Right.get_hipoffset());
-    Back_Right.servoknee.write(Back_Right.get_knee_angle() + Back_Right.get_kneeoffset());
-
+    Front_Left.move_leg();
+    Front_Right.move_leg();
+    Back_Left.move_leg();
+    Back_Right.move_leg();
     delay(8);
 }
 
@@ -377,7 +369,7 @@ void Quadruped::move_backward()
             double x_arc = i * step - step_size;
             y_arc = height - (sqrt((step_size / 2) * (step_size / 2) - (x_arc + step_size / 2) * (x_arc + step_size / 2)));
             x_horiz = -t * step_size;
-            if (initial_position == 0)
+            if (initial_position == 1)
             {
                 Front_Left.get_angles(height, x_horiz);
                 Back_Right.get_angles(height, x_horiz);
@@ -386,7 +378,7 @@ void Quadruped::move_backward()
                 // FL and BR 's next move should be an arc(backward)
                 // AND FR and BL 's next move should be horizontal(forward)
             }
-            else if (initial_position == 1)
+            else if (initial_position == 0)
             {
                 Front_Left.get_angles(y_arc, x_arc);
                 Back_Right.get_angles(y_arc, x_arc);
