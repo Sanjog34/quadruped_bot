@@ -11,47 +11,38 @@ void setup()
 
     Serial.begin(115200);
     quadruped.init(15, 7);
+    back_left.set_offset(-10.00,6.00);
+    back_right.set_offset(3.00,-12.00);
+   front_right.set_offset(7.00,-4.00);
+   front_left.set_offset(-6.00,0.00);
     quadruped.moveTo_base_pos();
-    delay(1000);
+    delay(3000);
     quadruped.move_vert();
-    delay(1000);
-    back_left.move_angles(180, 0);
-    back_right.move_angles(0, 180);
-    front_left.move_angles(180, 0);
-    front_right.move_angles(0, 180);
-    delay(1000);
-    // back_left.set_offset(-8, 0);
-    // back_right.set_offset(0, 0);
-    // front_left.set_offset(-6, 0);
-    // front_right.set_offset(0, 0);
-
-    delay(1000);
-    back_left.move_angles(180, 0);
-    back_right.move_angles(0, 180);
-    front_left.move_angles(180, 0);
-    front_right.move_angles(0, 180);
-    delay(1000);
-    quadruped.moveTo_base_pos();
 }
 void loop()
 {
-        if (Serial.available())
+    if (Serial.available())
+    {
+        char c = Serial.read();
+        if (c == 'a')
         {
-            char c = Serial.read();
-            if (c == 'a')
-            {
-                // Serial.println("start");
-                quadruped.move_forward();
-                // Serial.println("end");
-            }
-           else if (c == 'b')
-            {
-                quadruped.move_backward();
-            }
-                       else if (c == 'c')
-            {
-                quadruped.moveTo_base_pos();
-            }
-        
+            quadruped.move_forward();
+        }
+        else if (c == 'b')
+        {
+            quadruped.move_backward();
+        }
+        else if (c == 'c')
+        {
+            quadruped.moveTo_base_pos();
+        }
+        else if (c == 's')
+        {
+            quadruped.shake_hand();
+        }
+                else if (c == 'h')
+        {
+            quadruped.say_hi();
+        }
     }
 }

@@ -126,18 +126,18 @@ void Leg ::move_arc()
 
 void Leg ::crawl_forward()
 {
- if (pos == 0)
-{
-    move_arc();
-    pos = 1;
-    return;
-}
-else if (pos == 1)
-{
-    move_horizontal();
-    pos = 0;
-    return;
-}
+    if (pos == 0)
+    {
+        move_arc();
+        pos = 1;
+        return;
+    }
+    else if (pos == 1)
+    {
+        move_horizontal();
+        pos = 0;
+        return;
+    }
 }
 
 void Leg::move_leg()
@@ -149,7 +149,7 @@ void Leg::move_leg()
 
 void Leg ::move_angles(double hipangle, double kneeangle)
 {
-
+    //    Serial.println("i'm here");
     servohip.write(hipangle + hip_offset);
     servoknee.write(kneeangle + knee_offset);
     delay(8);
@@ -169,16 +169,20 @@ void Leg ::print_angles(double length, double height)
 
 void Leg ::calibrate(String name)
 {
+    double anglehip, angleknee;
     DEBUG_PRINT("calibrating ");
     DEBUG_PRINT(name);
     DEBUG_PRINT("\n\n");
     char c;
-    double anglehip = 180;
-    double angleknee = 0;
-    if (leg_id == 1)
+    if (leg_id == left)
     {
-        double anglehip = 0;
-        double angleknee = 180;
+        anglehip = 180;
+        angleknee = 0;
+    }
+    if (leg_id == right)
+    {
+        anglehip = 0;
+        angleknee = 180;
     }
     servohip.write(anglehip);
     servoknee.write(angleknee);
@@ -204,7 +208,7 @@ void Leg ::calibrate(String name)
             DEBUG_PRINT("\n");
         }
     } while (c != 'x');
-    servohip.write(90);
+    // servohip.write(90);
     c = 'o';
 
     DEBUG_PRINT("setting knee offset\n\n");
@@ -231,6 +235,32 @@ void Leg ::calibrate(String name)
     } while (c != 'x');
 
     DEBUG_PRINT("done calibrating leg!!!\n");
+    DEBUG_PRINT("set_offset(");
+    DEBUG_PRINT(hip_offset);
+    DEBUG_PRINT(",");
+    DEBUG_PRINT(knee_offset);
+    DEBUG_PRINT(");\n");
+    moveTo_base_pos();
+}
+
+double Leg::get_hipoffset()
+{
+    return hip_offset;
+}
+
+double Leg::get_kneeoffset()
+{
+    return knee_offset;
+}
+
+double Leg::get_hip_angle()
+{
+    return hip_angle;
+}
+
+double Leg::get_knee_angle()
+{
+    return knee_angle;
 }
 
 void Quadruped::init(double height, double step_size)
@@ -246,15 +276,15 @@ void Quadruped::init(double height, double step_size)
 void Quadruped::move_bot()
 {
     Front_Left.servohip.write(Front_Left.get_hip_angle() + Front_Left.get_hipoffset());
-    Front_Left.servoknee.write(Front_Left.get_knee_angle() - Front_Left.get_kneeoffset());
+    Front_Left.servoknee.write(Front_Left.get_knee_angle() + Front_Left.get_kneeoffset());
 
-    Front_Right.servohip.write(Front_Right.get_hip_angle() - Front_Right.get_hipoffset());
+    Front_Right.servohip.write(Front_Right.get_hip_angle() + Front_Right.get_hipoffset());
     Front_Right.servoknee.write(Front_Right.get_knee_angle() + Front_Right.get_kneeoffset());
 
     Back_Left.servohip.write(Back_Left.get_hip_angle() + Back_Left.get_hipoffset());
-    Back_Left.servoknee.write(Back_Left.get_knee_angle() - Back_Left.get_kneeoffset());
+    Back_Left.servoknee.write(Back_Left.get_knee_angle() + Back_Left.get_kneeoffset());
 
-    Back_Right.servohip.write(Back_Right.get_hip_angle() - Back_Right.get_hipoffset());
+    Back_Right.servohip.write(Back_Right.get_hip_angle() + Back_Right.get_hipoffset());
     Back_Right.servoknee.write(Back_Right.get_knee_angle() + Back_Right.get_kneeoffset());
 
     delay(8);
@@ -268,13 +298,17 @@ void Quadruped::moveTo_base_pos()
     Back_Left.get_angles(height, 0);
     initial_position = -1;
     move_bot();
+    delay(1000);
 }
 
 void Quadruped::move_forward()
 {
-    DEBUG_PRINT(initial_position);
-    DEBUG_PRINT("\n");
-    if (initial_position == -1)
+    if (initial_position == 2)
+    {
+        moveTo_base_pos();
+        initial_position = -1;
+    }
+    else if (initial_position == -1)
     {
         for (double i = 0; i >= -step_size; i = i - 0.5)
         {
@@ -286,6 +320,8 @@ void Quadruped::move_forward()
         initial_position = 0; // FL and BR 's next move should be an arc(forward)
                               // AND FR and BL 's next move should be horizontal(backward)
     }
+    // DEBUG_PRINT(initial_position);
+    // DEBUG_PRINT("\n");
     else
     {
         const int frames = 40;
@@ -331,7 +367,12 @@ void Quadruped::move_forward()
 
 void Quadruped::move_backward()
 {
-    if (initial_position == -1)
+    if (initial_position == 2)
+    {
+        moveTo_base_pos();
+        initial_position = -1;
+    }
+    else if (initial_position == -1)
     {
         for (double i = 0; i <= step_size; i = i + 0.5)
         {
@@ -378,29 +419,6 @@ void Quadruped::move_backward()
     }
 }
 
-void Quadruped::shake_hand()
-{
-    moveTo_base_pos();
-    delay(200);
-    Front_Right.servohip.write(180);
-    Front_Right.servoknee.write(0);
-    delay(500);
-    for (int times = 0; times < 3; times++)
-    {
-        for (float i = 180; i >= 160; i = i - 2)
-        {
-            Front_Right.servohip.write(i);
-            delay(8);
-        }
-        for (float i = 160; i <= 180; i = i + 2)
-        {
-            Front_Right.servohip.write(i);
-            delay(8);
-        }
-    }
-    moveTo_base_pos();
-}
-
 void Quadruped ::move_vert()
 {
     for (float i = height; i >= 6.5; i = i - 0.1)
@@ -429,4 +447,79 @@ void Quadruped ::calibrate()
     Back_Right.calibrate("Back right");
     Front_Left.calibrate("Front left");
     Front_Right.calibrate("Front right");
+}
+void Quadruped ::shake_hand()
+{
+    moveTo_base_pos();
+    delay(100);
+    Front_Right.move_angles(180, 30);
+    delay(500);
+    for (int times = 0; times < 2; times++)
+    {
+
+        for (int i = 180; i >= 160; i = i - 2)
+        {
+            // Serial.println("here1");
+            Front_Right.servohip.write(i);
+            delay(50);
+        }
+        for (int i = 160; i <= 180; i = i + 2)
+        {
+            Front_Right.servohip.write(i);
+            // Serial.println("here2");
+            delay(50);
+        }
+    }
+    delay(1000);
+    moveTo_base_pos();
+}
+
+void Quadruped ::sit_down()
+{
+    for (int i = height; i >= 6.5; i = i - 0.2)
+    {
+        Front_Left.get_angles(i, 0);
+        Front_Right.get_angles(i, 0);
+        Back_Left.get_angles(i, 0);
+        Back_Right.get_angles(i, 0);
+        move_bot();
+    }
+    delay(500);
+}
+void Quadruped ::say_hi()
+{
+    if (initial_position != 2)
+    {
+        sit_down();
+        initial_position = 2;
+
+        for (float i = 6.5; i <= 10; i = i + 0.2)
+        {
+            Front_Left.get_angles(i, 0);
+            Front_Right.get_angles(i, 0);
+            move_bot();
+        }
+    }
+    delay(1000);
+    Front_Right.move_angles(180, 0);
+    delay(500);
+    for (int times = 0; times < 2; times++)
+    {
+
+        for (int i = 0; i <= 120; i = i + 10)
+        {
+            Front_Right.servoknee.write(i);
+            // Serial.println("here2");
+            delay(50);
+        }
+        for (int i = 120; i >= 0; i = i - 10)
+        {
+            // Serial.println("here1");
+            Front_Right.servoknee.write(i);
+            delay(50);
+        }
+    }
+    delay(1000);
+    move_bot();
+    delay(500);
 }
